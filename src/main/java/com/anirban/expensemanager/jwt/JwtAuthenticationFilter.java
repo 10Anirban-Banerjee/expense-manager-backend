@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 
 import java.io.IOException;
 
@@ -35,6 +37,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getServletPath();
+
+        if (path.startsWith("/auth") ||
+                path.startsWith("/swagger-ui") ||
+                path.startsWith("/v3/api-docs")) {
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader =
                 request.getHeader("Authorization");
 
@@ -44,9 +56,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader != null &&
                 authHeader.startsWith("Bearer ")) {
 
-            token = authHeader.substring(7);
-
-            email = jwtUtil.extractEmail(token);
+            try {
+                token = authHeader.substring(7);
+                email = jwtUtil.extractEmail(token);
+            } catch (ExpiredJwtException ex) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"JWT token expired. Please login again.\"}");
+                return;
+            } catch (JwtException ex) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"Invalid JWT token.\"}");
+                return;
+            }
         }
 
         if (email != null &&

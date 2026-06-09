@@ -9,14 +9,11 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 
 @Service
-public class CustomUserDetailsService
-        implements UserDetailsService {
+public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    public CustomUserDetailsService(
-            UserRepository userRepository) {
-
+    public CustomUserDetailsService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -26,15 +23,18 @@ public class CustomUserDetailsService
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException(
-                                "User not found"));
+                        new UsernameNotFoundException("User not found"));
+
+        String role = "ROLE_" + user.getRole().name();
+
+        if (!role.startsWith("ROLE_")) {
+            role = "ROLE_" + role;
+        }
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
-                Collections.singleton(
-                        new SimpleGrantedAuthority(user.getRole())
-                )
+                Collections.singleton(new SimpleGrantedAuthority(role))
         );
     }
 }

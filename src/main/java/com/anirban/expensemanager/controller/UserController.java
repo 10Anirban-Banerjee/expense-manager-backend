@@ -62,16 +62,20 @@ public class UserController {
     }
 
     @PostMapping("/refresh")
-    public String refreshToken(
-            @RequestHeader("Authorization")
-            String authHeader) {
+    public LoginResponseDto refreshToken(
+            @RequestHeader("Authorization") String authHeader) {
 
-        String refreshToken =
-                authHeader.substring(7);
+        String refreshToken = authHeader.substring(7);
 
-        String email =
-                jwtUtil.extractEmail(refreshToken);
+        String email = jwtUtil.extractEmail(refreshToken);
 
-        return jwtUtil.generateToken(email);
+        String newAccessToken = jwtUtil.generateToken(email);
+
+        String newRefreshToken = jwtUtil.generateRefreshToken(email);
+
+        return new LoginResponseDto(
+                newAccessToken,
+                newRefreshToken
+        );
     }
 }

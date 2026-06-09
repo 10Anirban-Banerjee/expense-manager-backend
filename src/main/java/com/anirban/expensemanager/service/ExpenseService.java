@@ -1,16 +1,23 @@
 package com.anirban.expensemanager.service;
 
-import com.anirban.expensemanager.entity.Expense;
-import com.anirban.expensemanager.repository.ExpenseRepository;
 import com.anirban.expensemanager.dto.ExpenseRequestDto;
+import com.anirban.expensemanager.entity.Expense;
+import com.anirban.expensemanager.entity.User;
 import com.anirban.expensemanager.exception.ResourceNotFoundException;
-import org.springframework.stereotype.Service;
+import com.anirban.expensemanager.repository.ExpenseRepository;
+import com.anirban.expensemanager.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+
 
 import java.util.List;
 
@@ -18,30 +25,50 @@ import java.util.List;
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
+    private final UserRepository userRepository;
 
     private static final Logger logger =
             LoggerFactory.getLogger(ExpenseService.class);
 
-    public ExpenseService(ExpenseRepository expenseRepository) {
+    public ExpenseService(
+            ExpenseRepository expenseRepository,
+            UserRepository userRepository) {
+
         this.expenseRepository = expenseRepository;
+        this.userRepository = userRepository;
     }
 
+    @CacheEvict(value = "expenses", allEntries = true)
     public Expense saveExpense(ExpenseRequestDto dto) {
 
-        logger.info("+++++++++Saving new expense with title: {}", dto.getTitle());
+        logger.info("Saving new expense with title: {}", dto.getTitle());
+
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         Expense expense = new Expense();
 
         expense.setTitle(dto.getTitle());
         expense.setAmount(dto.getAmount());
+        expense.setExpenseDate(dto.getExpenseDate());
+
+        // Attach logged-in user
+        expense.setUser(user);
 
         Expense savedExpense = expenseRepository.save(expense);
 
-        logger.info("++++++++++Expense saved successfully with id: {}", savedExpense.getId());
+        logger.info("Expense saved successfully with id: {}", savedExpense.getId());
 
         return savedExpense;
     }
 
+    @CacheEvict(value = "expenses", allEntries = true)
     public Expense updateExpense(Long id, ExpenseRequestDto dto) {
 
         logger.info("Updating expense with id: {}", id);
@@ -52,6 +79,7 @@ public class ExpenseService {
 
         expense.setTitle(dto.getTitle());
         expense.setAmount(dto.getAmount());
+        expense.setExpenseDate(dto.getExpenseDate());
 
         Expense updatedExpense = expenseRepository.save(expense);
 
@@ -60,6 +88,7 @@ public class ExpenseService {
         return updatedExpense;
     }
 
+    @CacheEvict(value = "expenses", allEntries = true)
     public void deleteExpense(Long id) {
 
         logger.info("Deleting expense with id: {}", id);
@@ -73,11 +102,16 @@ public class ExpenseService {
         logger.info("Expense deleted successfully with id: {}", id);
     }
 
-    public List<Expense> getAllExpenses() {
+    @Cacheable(value = "expenses", key = "#email")
+    public List<Expense> getAllExpenses(String email) {
 
         logger.info("Fetching all expenses");
 
-        return expenseRepository.findAll();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        return expenseRepository.findByUser(user);
     }
 
     public Page<Expense> getExpensesWithPagination(

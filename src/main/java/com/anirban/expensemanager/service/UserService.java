@@ -34,7 +34,7 @@ public class UserService {
 
         user.setPassword(encodedPassword);
 
-        user.setRole("USER");
+        user.setRole(dto.getRole());
 
         return userRepository.save(user);
     }

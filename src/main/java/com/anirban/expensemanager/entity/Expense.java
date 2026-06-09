@@ -7,7 +7,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
 
 @Entity
 public class Expense {
@@ -23,6 +27,12 @@ public class Expense {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private LocalDate expenseDate;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
     public Long getId() {
         return id;
@@ -58,6 +68,7 @@ public class Expense {
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -69,7 +80,25 @@ public class Expense {
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
+
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+
+    public LocalDate getExpenseDate() {
+        return expenseDate;
+    }
+
+    public void setExpenseDate(LocalDate expenseDate) {
+        this.expenseDate = expenseDate;
     }
 }

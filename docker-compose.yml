@@ -14,12 +14,20 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7
+    container_name: expense-redis
+
+    ports:
+      - "6379:6379"
+
   app:
     build: .
     container_name: expense-app
 
     depends_on:
       - postgres
+      - redis
 
     ports:
       - "8080:8080"
@@ -28,3 +36,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/expense_manager_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+
+      JWT_SECRET: mysecretkeymysecretkeymysecretkey12
+
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379

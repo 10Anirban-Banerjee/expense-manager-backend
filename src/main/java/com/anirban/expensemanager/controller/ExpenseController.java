@@ -3,6 +3,7 @@ package com.anirban.expensemanager.controller;
 import com.anirban.expensemanager.entity.Expense;
 import com.anirban.expensemanager.service.ExpenseService;
 import com.anirban.expensemanager.dto.ExpenseRequestDto;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,7 +45,13 @@ public class ExpenseController {
 
     @GetMapping
     public List<Expense> getAllExpenses() {
-        return expenseService.getAllExpenses();
+
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        return expenseService.getAllExpenses(email);
     }
 
     @GetMapping("/paginated")
